@@ -89,7 +89,7 @@ def load_files(path: str, mode: Literal['L', 'RGB', 'RGBA'] = 'L') -> list[tuple
     for fname in filenames:
         img = Image.open(f"{path}/{fname}").convert(mode)
         #if path.endswith((".jpg", ".png", ".jpeg")):
-        out.append((load_image(img, mode), fname))
+        out.append((load_image(img, mode, CROP_IMAGE), fname))
     
     print("DONE")
     return out
