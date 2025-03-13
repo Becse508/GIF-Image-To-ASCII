@@ -46,6 +46,7 @@ charsets = {
     "shades": " ░▒▓█",
     "layers": " ▁▂▃▄▅▆▇█",
     "dots": " ⡀⡄⡆⡇⣇⣧⣷⣿",
+    "shades_dots_mix": " ⡀⡄⡆⡇⣇⣧⣷⣿░▒▓█",
     "symbolic1": " .,:;+*?%$#@",
     "symbolic2": " .:!*%$@&#SB",
     "brutal": """ .'`^",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$""",
@@ -54,8 +55,9 @@ charsets = {
 
 # SETTINGS
 CHARSET = "shades" # one of 'charsets' OR custom
+INVERT = False # For light background
 OUTPUT_MODE = "char" # only 'char' is available currently
-OUTPUT_SIZE = (24, 32) # None for original size, ONLY DOWNSCALING WORKS
+OUTPUT_SIZE = (24, 32) # set to None for original size, ONLY DOWNSCALING WORKS
 VALUECALC_FUNC = ValueCalc.average_nonzero # The function to use for calculating the value of a pixel when resizing the image
 CROP_IMAGE = True # remove all empty rows and columns
 OUT_SEPARATOR = "\n" # The separator to use between frames of GIF-s
@@ -66,6 +68,7 @@ OUTPATH = "output"
 
 
 CHARACTERS = charsets.get(CHARSET, CHARSET)
+if INVERT: CHARACTERS = CHARACTERS[::-1]
 
 
 def load_frame(img: Image.Image, mode: str, crop: bool = True) -> np.ndarray:
