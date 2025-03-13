@@ -1,7 +1,6 @@
 from os import listdir
 from PIL import Image
 import numpy as np
-from enum import Enum
 from typing import Literal, Callable
 from statistics import fmean
 
@@ -41,29 +40,9 @@ ValueFunc = Callable[[np.ndarray, int, int, tuple[int, int]], int]
 
 
 
-class ConsoleColor(Enum):
-    Black = 0,
-    DarkBlue = 1,
-    DarkGreen = 2,
-    DarkCyan = 3,
-    DarkRed = 4,
-    DarkMagenta = 5,
-    DarkYellow = 6,
-    Gray = 7,
-    DarkGray = 8,
-    Blue = 9,
-    Green = 10,
-    Cyan = 11,
-    Red = 12,
-    Magenta = 13,
-    Yellow = 14,
-    White = 15
-
-
-
 charsets = {
-    "shaded": " ░▒▓█",
-    "layered": " ▁▂▃▄▅▆▇█",
+    "shades": " ░▒▓█",
+    "layers": " ▁▂▃▄▅▆▇█",
     "dots": " ⡀⡄⡆⡇⣇⣧⣷⣿",
     "symbolic1": " .,:;+*?%$#@",
     "symbolic2": " .:!*%$@&#SB",
@@ -72,10 +51,10 @@ charsets = {
 
 
 # SETTINGS
-CHARSET = "shaded" # one of 'charsets' OR custom
+CHARSET = "shades" # one of 'charsets' OR custom
 OUTPUT_MODE = "char" # only 'char' is available currently
 OUTPUT_SIZE = (24, 32) # None for original size, ONLY DOWNSCALING WORKS
-VALUECALC_FUNC = ValueCalc.average_nonzero
+VALUECALC_FUNC = ValueCalc.average_nonzero # The function to use for calculating the value of a pixel when resizing the image
 CROP_IMAGE = True # remove all empty rows and columns
 
 INPATH = "input"
@@ -135,7 +114,7 @@ def convert(img: np.ndarray,
 
 
 for img, name in load_files(INPATH):
-    print(f"converting '{name}' to ASCII in '{OUTPUT_MODE}' mode .... ", end = "")
+    print(f"converting '{name}' to TEXT in '{OUTPUT_MODE}' mode .... ", end = "")
     with open(f"{OUTPATH}/{name}.txt", "w", encoding="utf-8") as f:
         f.write(convert(img, OUTPUT_MODE, OUTPUT_SIZE, VALUECALC_FUNC))
     print("DONE")
