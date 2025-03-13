@@ -1,5 +1,5 @@
 from os import listdir
-from PIL import Image
+from PIL import Image, ImageSequence
 import numpy as np
 from typing import Literal, Callable
 from statistics import fmean
@@ -56,6 +56,7 @@ OUTPUT_MODE = "char" # only 'char' is available currently
 OUTPUT_SIZE = (24, 32) # None for original size, ONLY DOWNSCALING WORKS
 VALUECALC_FUNC = ValueCalc.average_nonzero # The function to use for calculating the value of a pixel when resizing the image
 CROP_IMAGE = True # remove all empty rows and columns
+OUT_SEPARATOR = "\n" # The separator to use between frames of GIF-s
 
 INPATH = "input"
 OUTPATH = "output"
@@ -65,7 +66,7 @@ OUTPATH = "output"
 CHARACTERS = charsets.get(CHARSET, CHARSET)
 
 
-def load_image(img: Image.Image, mode: str, crop: bool = True) -> np.ndarray:
+def load_frame(img: Image.Image, mode: str, crop: bool = True) -> np.ndarray:
     width, height = img.size
     # the 3rd dimension is for the color channels
     if mode == 'L':
@@ -76,20 +77,26 @@ def load_image(img: Image.Image, mode: str, crop: bool = True) -> np.ndarray:
     if crop:
         array = array[~np.all(array == 0, axis=1)]
         array = np.delete(array, np.argwhere(np.all(array[..., :] == 0, axis=0)), axis=1)
+        
     return array
 
 
 
 
-def load_files(path: str, mode: Literal['L', 'RGB', 'RGBA'] = 'L') -> list[tuple[np.ndarray, str]]:
+def load_files(path: str, mode: Literal['L', 'RGB', 'RGBA'] = 'L') -> list[tuple[list[np.ndarray], str]]:
     
     filenames = listdir(path)
     print(f"loading {len(filenames)} file(s) from '{path}' .... ", end = "")
     out = []
     for fname in filenames:
-        img = Image.open(f"{path}/{fname}").convert(mode)
-        #if path.endswith((".jpg", ".png", ".jpeg")):
-        out.append((load_image(img, mode, CROP_IMAGE), fname))
+        img = Image.open(f"{path}/{fname}")
+        frame_list = []
+        
+        for frame in ImageSequence.Iterator(img):
+            frame = frame.convert(mode)
+            frame_list.append(load_frame(frame, mode, CROP_IMAGE))
+            
+        out.append((frame_list, fname))
     
     print("DONE")
     return out
@@ -113,8 +120,9 @@ def convert(img: np.ndarray,
 
 
 
-for img, name in load_files(INPATH):
+for frame_list, name in load_files(INPATH):
     print(f"converting '{name}' to TEXT in '{OUTPUT_MODE}' mode .... ", end = "")
     with open(f"{OUTPATH}/{name}.txt", "w", encoding="utf-8") as f:
-        f.write(convert(img, OUTPUT_MODE, OUTPUT_SIZE, VALUECALC_FUNC))
+        f.write(OUT_SEPARATOR.join([convert(frame, OUTPUT_MODE, OUTPUT_SIZE, VALUECALC_FUNC) for frame in frame_list]))
+        
     print("DONE")

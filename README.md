@@ -1,5 +1,5 @@
-# Image To ASCII art
-Convert images to text.
+# GIF and Image To ASCII art
+Convert GIFs and images to text.
 
 ## Functionality
 - Bulk conversion
@@ -17,4 +17,3 @@ Convert images to text.
 - Colors
 - UI (maybe)
 - More accessible settings
-- GIF conversion
