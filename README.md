@@ -17,7 +17,6 @@ Convert GIFs and images to text.
 - Colors
 - UI (maybe)
 - More accessible settings
-- GIF conversion
 
 ## Example
 ```
