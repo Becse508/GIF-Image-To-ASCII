@@ -7,6 +7,12 @@ from statistics import fmean
 
 class ValueCalc:
     @staticmethod
+    def __get_slice(img, x, y, shape):
+        orig_shapey, orig_shapex = img.shape
+        return img[round(y / shape[0] * orig_shapey) : round((y+1) / shape[0] * orig_shapey), round(x / shape[1] * orig_shapex) : round((x+1) / shape[1] * orig_shapex)].flatten()
+    
+    
+    @staticmethod
     def none(img, x, y, shape) -> int:
         return img[y, x]
     
@@ -21,18 +27,14 @@ class ValueCalc:
     def average(img: np.ndarray, x, y, shape) -> int:
         """The average value of the slice"""
         
-        orig_shapey, orig_shapex = img.shape
-        sl = img[round(y / shape[0] * orig_shapey) : round((y+1) / shape[0] * orig_shapey), round(x / shape[1] * orig_shapex) : round((x+1) / shape[1] * orig_shapex)].flatten()
-        return fmean(sl)
+        return fmean(ValueCalc.__get_slice(img, x, y, shape))
+        
     
     @staticmethod
     def average_nonzero(img: np.ndarray, x, y, shape) -> int:
-        """The average value of the pixels in the slice with a non-zero value. returns 0 if all pixels are 0"""
+        """The average value of the pixels in the slice. Ignores pixels with a value of 0. returns 0 if all pixels in the slice are zero"""
         
-        orig_shapey, orig_shapex = img.shape
-        sl = img[round(y / shape[0] * orig_shapey) : round((y+1) / shape[0] * orig_shapey), round(x / shape[1] * orig_shapex) : round((x+1) / shape[1] * orig_shapex)].flatten()
-        sl = [i for i in sl if i != 0]
-        
+        sl = [i for i in ValueCalc.__get_slice(img, x, y, shape) if i != 0]
         return 0 if len(sl) == 0 else fmean(sl)
     
     
@@ -87,6 +89,7 @@ def load_files(path: str, mode: Literal['L', 'RGB', 'RGBA'] = 'L') -> list[tuple
     
     filenames = listdir(path)
     print(f"loading {len(filenames)} file(s) from '{path}' .... ", end = "")
+    
     out = []
     for fname in filenames:
         img = Image.open(f"{path}/{fname}")
@@ -122,6 +125,7 @@ def convert(img: np.ndarray,
 
 for frame_list, name in load_files(INPATH):
     print(f"converting '{name}' to TEXT in '{OUTPUT_MODE}' mode .... ", end = "")
+    
     with open(f"{OUTPATH}/{name}.txt", "w", encoding="utf-8") as f:
         f.write(OUT_SEPARATOR.join([convert(frame, OUTPUT_MODE, OUTPUT_SIZE, VALUECALC_FUNC) for frame in frame_list]))
         
