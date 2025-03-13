@@ -1,0 +1,141 @@
+from os import listdir
+from PIL import Image
+import numpy as np
+from enum import Enum
+from typing import Literal, Callable
+from statistics import fmean
+
+
+class ValueCalc:
+    @staticmethod
+    def none(img, x, y, shape) -> int:
+        return img[y, x]
+    
+    @staticmethod
+    def general(img: np.ndarray, x, y, shape) -> int:
+        """The first pixel from the slice made by repositioning"""
+        
+        orig_shapey, orig_shapex = img.shape
+        return img[round(y / shape[0] * orig_shapey), round(x / shape[1] * orig_shapex)]
+    
+    @staticmethod
+    def average(img: np.ndarray, x, y, shape) -> int:
+        """The average value of the slice"""
+        
+        orig_shapey, orig_shapex = img.shape
+        sl = img[round(y / shape[0] * orig_shapey) : round((y+1) / shape[0] * orig_shapey), round(x / shape[1] * orig_shapex) : round((x+1) / shape[1] * orig_shapex)].flatten()
+        return fmean(sl)
+    
+    @staticmethod
+    def average_nonzero(img: np.ndarray, x, y, shape) -> int:
+        """The average value of the pixels in the slice with a non-zero value. returns 0 if all pixels are 0"""
+        
+        orig_shapey, orig_shapex = img.shape
+        sl = img[round(y / shape[0] * orig_shapey) : round((y+1) / shape[0] * orig_shapey), round(x / shape[1] * orig_shapex) : round((x+1) / shape[1] * orig_shapex)].flatten()
+        sl = [i for i in sl if i != 0]
+        
+        return 0 if len(sl) == 0 else fmean(sl)
+    
+    
+ValueFunc = Callable[[np.ndarray, int, int, tuple[int, int]], int]
+
+
+
+class ConsoleColor(Enum):
+    Black = 0,
+    DarkBlue = 1,
+    DarkGreen = 2,
+    DarkCyan = 3,
+    DarkRed = 4,
+    DarkMagenta = 5,
+    DarkYellow = 6,
+    Gray = 7,
+    DarkGray = 8,
+    Blue = 9,
+    Green = 10,
+    Cyan = 11,
+    Red = 12,
+    Magenta = 13,
+    Yellow = 14,
+    White = 15
+
+
+
+charsets = {
+    "shaded": " ░▒▓█",
+    "layered": " ▁▂▃▄▅▆▇█",
+    "dots": " ⡀⡄⡆⡇⣇⣧⣷⣿",
+    "symbolic1": " .,:;+*?%$#@",
+    "symbolic2": " .:!*%$@&#SB",
+    "brutal": """ .'`^",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$""",
+}
+
+
+# SETTINGS
+CHARSET = "shaded" # one of 'charsets' OR custom
+OUTPUT_MODE = "char" # only 'char' is available currently
+OUTPUT_SIZE = (24, 32) # None for original size, ONLY DOWNSCALING WORKS
+VALUECALC_FUNC = ValueCalc.average_nonzero
+CROP_IMAGE = True # remove all empty rows and columns
+
+INPATH = "input"
+OUTPATH = "output"
+# --------
+
+
+CHARACTERS = charsets.get(CHARSET, CHARSET)
+
+
+def load_image(img: Image.Image, mode: str, crop: bool = True) -> np.ndarray:
+    width, height = img.size
+    # the 3rd dimension is for the color channels
+    if mode == 'L':
+        array = np.array(img.getdata(), int).reshape(height, width)
+    else:
+        array = np.array(img.getdata(), int).reshape(height, width, len(mode))
+   
+    if crop:
+        array = array[~np.all(array == 0, axis=1)]
+        array = np.delete(array, np.argwhere(np.all(array[..., :] == 0, axis=0)), axis=1)
+    return array
+
+
+
+
+def load_files(path: str, mode: Literal['L', 'RGB', 'RGBA'] = 'L') -> list[tuple[np.ndarray, str]]:
+    
+    filenames = listdir(path)
+    print(f"loading {len(filenames)} file(s) from '{path}' .... ", end = "")
+    out = []
+    for fname in filenames:
+        img = Image.open(f"{path}/{fname}").convert(mode)
+        #if path.endswith((".jpg", ".png", ".jpeg")):
+        out.append((load_image(img, mode), fname))
+    
+    print("DONE")
+    return out
+
+
+def convert(img: np.ndarray,
+            mode: Literal['char', 'bgColor'],
+            shape: tuple[int, int] = None,
+            value_func: ValueFunc = ValueCalc.none) -> str:
+    
+    out = ""
+    if shape is None: shape = img.shape
+    
+    if mode == 'char':
+        for y in range(shape[0]):
+            for x in range(shape[1]):
+                out += CHARACTERS[round(value_func(img, x, y, shape) / 255 * len(CHARACTERS))]
+            out += "\n"
+    
+    return out
+
+
+
+for img, name in load_files(INPATH):
+    print(f"converting '{name}' to ASCII in '{OUTPUT_MODE}' mode .... ", end = "")
+    with open(f"{OUTPATH}/{name}.txt", "w", encoding="utf-8") as f:
+        f.write(convert(img, OUTPUT_MODE, OUTPUT_SIZE, VALUECALC_FUNC))
+    print("DONE")
